@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>✨ 超級無敵可愛九九乘法表 ✨</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap');
+
+    :root {
+      --cell-size: 80px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      font-family: 'Nunito', 'Microsoft JhengHei', sans-serif;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px 60px;
+    }
+
+    /* ── Starfield ── */
+    #stars {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .star {
+      position: absolute;
+      border-radius: 50%;
+      background: #fff;
+      animation: twinkle var(--d) ease-in-out infinite alternate;
+    }
+    @keyframes twinkle {
+      from { opacity: 0.1; transform: scale(0.8); }
+      to   { opacity: 1;   transform: scale(1.3); }
+    }
+
+    /* ── Floating Emoji ── */
+    .floater {
+      position: fixed;
+      font-size: 1.8rem;
+      animation: drift var(--dur) ease-in-out infinite alternate;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+    @keyframes drift {
+      from { transform: translateY(0) rotate(-10deg); }
+      to   { transform: translateY(-30px) rotate(10deg); }
+    }
+
+    /* ── Title ── */
+    .title-wrap {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    .title {
+      font-size: clamp(2rem, 6vw, 3.5rem);
+      font-weight: 900;
+      background: linear-gradient(90deg,
+        #ff6ec7, #ffb347, #ffe44d, #7fff6e, #6ec7ff, #c46eff, #ff6ec7);
+      background-size: 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: rainbowShift 4s linear infinite;
+      letter-spacing: 2px;
+      text-shadow: none;
+      filter: drop-shadow(0 0 16px rgba(255,120,220,0.7));
+    }
+    @keyframes rainbowShift {
+      0%   { background-position: 0%; }
+      100% { background-position: 200%; }
+    }
+    .subtitle {
+      color: rgba(255,255,255,0.6);
+      font-size: 1rem;
+      margin-top: 6px;
+      letter-spacing: 3px;
+    }
+
+    /* ── Legend / Mode Buttons ── */
+    .controls {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 32px;
+    }
+    .ctrl-btn {
+      padding: 8px 22px;
+      border-radius: 50px;
+      border: none;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.25);
+    }
+    .ctrl-btn:hover {
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 6px 24px rgba(255,120,220,0.5);
+    }
+    .ctrl-btn.active {
+      background: linear-gradient(135deg, #ff6ec7, #c46eff);
+      border-color: transparent;
+      box-shadow: 0 4px 20px rgba(196,110,255,0.6);
+    }
+
+    /* ── Table Wrapper ── */
+    .table-wrap {
+      position: relative;
+      z-index: 1;
+      overflow: auto;
+      border-radius: 24px;
+      padding: 4px;
+      background: linear-gradient(135deg, #ff6ec7 0%, #ffe44d 25%, #7fff6e 50%, #6ec7ff 75%, #c46eff 100%);
+      box-shadow: 0 0 60px rgba(196,110,255,0.5), 0 0 120px rgba(255,110,199,0.3);
+      animation: borderPulse 6s ease-in-out infinite alternate;
+    }
+    @keyframes borderPulse {
+      from { box-shadow: 0 0 40px rgba(196,110,255,0.4), 0 0 80px rgba(255,110,199,0.2); }
+      to   { box-shadow: 0 0 80px rgba(110,199,255,0.7), 0 0 160px rgba(196,110,255,0.4); }
+    }
+
+    table {
+      border-collapse: separate;
+      border-spacing: 4px;
+      background: rgba(15,12,41,0.92);
+      border-radius: 20px;
+      padding: 8px;
+    }
+
+    th, td {
+      width: var(--cell-size);
+      height: var(--cell-size);
+      text-align: center;
+      vertical-align: middle;
+      border-radius: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      transition: transform 0.2s cubic-bezier(.34,1.56,.64,1),
+                  box-shadow 0.2s, background 0.3s;
+      cursor: default;
+      user-select: none;
+      position: relative;
+    }
+
+    /* ── Corner cell ── */
+    .corner {
+      background: transparent !important;
+      pointer-events: none;
+    }
+
+    /* ── Header cells ── */
+    thead th, tbody th {
+      color: #fff;
+      font-size: 1.1rem;
+      background: linear-gradient(135deg, rgba(255,110,199,0.35), rgba(196,110,255,0.35));
+      border: 1px solid rgba(255,255,255,0.15);
+      backdrop-filter: blur(4px);
+      letter-spacing: 1px;
+    }
+    thead th:not(.corner) { font-size: 1.3rem; }
+
+    /* ── Data cells ── */
+    td {
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    /* Rainbow diagonal coloring by row */
+    tr:nth-child(1) td { background: rgba(255,110,199,0.18); }
+    tr:nth-child(2) td { background: rgba(255,160,90, 0.18); }
+    tr:nth-child(3) td { background: rgba(255,228,77, 0.18); }
+    tr:nth-child(4) td { background: rgba(127,255,110,0.18); }
+    tr:nth-child(5) td { background: rgba(110,220,255,0.18); }
+    tr:nth-child(6) td { background: rgba(110,199,255,0.18); }
+    tr:nth-child(7) td { background: rgba(110,150,255,0.18); }
+    tr:nth-child(8) td { background: rgba(196,110,255,0.18); }
+    tr:nth-child(9) td { background: rgba(255,110,230,0.18); }
+
+    /* Perfect squares get a sparkle style */
+    td.square {
+      background: linear-gradient(135deg, rgba(255,220,50,0.45), rgba(255,140,50,0.3)) !important;
+      border-color: rgba(255,200,50,0.5);
+      box-shadow: 0 0 12px rgba(255,220,50,0.4);
+      color: #ffe44d;
+    }
+
+    /* ── Hover highlight ── */
+    td:hover {
+      transform: scale(1.25) translateZ(0);
+      z-index: 10;
+      box-shadow: 0 0 0 3px #fff, 0 0 24px rgba(255,255,255,0.6);
+      color: #fff;
+    }
+
+    /* Cross-highlight via JS classes */
+    td.row-hl  { background: rgba(255,110,199,0.38) !important; }
+    td.col-hl  { background: rgba(110,199,255,0.38) !important; }
+    td.cross   { background: linear-gradient(135deg, #ff6ec7, #c46eff) !important;
+                 color: #fff !important;
+                 box-shadow: 0 0 0 2px #fff, 0 0 20px rgba(196,110,255,0.8) !important;
+                 transform: scale(1.25) !important; z-index: 11; }
+
+    /* ── Pop-up tooltip ── */
+    .bubble {
+      position: fixed;
+      padding: 12px 20px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #ff6ec7, #c46eff);
+      color: #fff;
+      font-size: 1.3rem;
+      font-weight: 900;
+      pointer-events: none;
+      z-index: 999;
+      transform: translate(-50%, -130%) scale(0);
+      transition: transform 0.18s cubic-bezier(.34,1.56,.64,1), opacity 0.15s;
+      opacity: 0;
+      white-space: nowrap;
+      box-shadow: 0 8px 32px rgba(196,110,255,0.6);
+    }
+    .bubble.show {
+      transform: translate(-50%, -130%) scale(1);
+      opacity: 1;
+    }
+
+    /* ── Particle burst ── */
+    .particle {
+      position: fixed;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 998;
+      animation: burst 0.6s ease-out forwards;
+    }
+    @keyframes burst {
+      0%   { transform: translate(0,0) scale(1); opacity: 1; }
+      100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+    }
+
+    /* ── Footer ── */
+    .footer {
+      position: relative;
+      z-index: 1;
+      margin-top: 40px;
+      color: rgba(255,255,255,0.35);
+      font-size: 0.85rem;
+      letter-spacing: 2px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="stars"></div>
+
+<!-- floating emojis -->
+<div class="floater" style="left:3%;top:10%;--dur:3.1s">🌸</div>
+<div class="floater" style="left:91%;top:15%;--dur:2.7s">⭐</div>
+<div class="floater" style="left:7%;top:70%;--dur:3.8s">🦄</div>
+<div class="floater" style="left:88%;top:65%;--dur:2.4s">🌈</div>
+<div class="floater" style="left:50%;top:5%;--dur:4.2s">✨</div>
+<div class="floater" style="left:20%;top:88%;--dur:3.5s">💫</div>
+<div class="floater" style="left:75%;top:85%;--dur:2.9s">🎀</div>
+
+<div class="title-wrap">
+  <div class="title">✨ 超級無敵可愛九九乘法表 ✨</div>
+  <div class="subtitle">MAGICAL MULTIPLICATION TABLE</div>
+</div>
+
+<div class="controls">
+  <button class="ctrl-btn active" id="btn-rainbow">🌈 彩虹模式</button>
+  <button class="ctrl-btn" id="btn-pastel">🌸 粉嫩模式</button>
+  <button class="ctrl-btn" id="btn-neon">⚡ 霓虹模式</button>
+  <button class="ctrl-btn" id="btn-square">🔆 完全平方數</button>
+</div>
+
+<div class="table-wrap">
+  <table id="multTable">
+    <thead>
+      <tr>
+        <th class="corner">×</th>
+        <script>for(let c=1;c<=9;c++) document.write(`<th>${c}</th>`);</script>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<div class="bubble" id="bubble"></div>
+
+<div class="footer">HOVER · CLICK · ENJOY ✨</div>
+
+<script>
+  /* ── Stars ── */
+  const starsEl = document.getElementById('stars');
+  for (let i = 0; i < 120; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const sz = Math.random() * 3 + 1;
+    Object.assign(s.style, {
+      width: sz + 'px', height: sz + 'px',
+      left: Math.random() * 100 + '%',
+      top:  Math.random() * 100 + '%',
+      '--d': (Math.random() * 3 + 1.5) + 's',
+      animationDelay: (Math.random() * 4) + 's'
+    });
+    starsEl.appendChild(s);
+  }
+
+  /* ── Build table ── */
+  const tbody = document.getElementById('tbody');
+  for (let r = 1; r <= 9; r++) {
+    const tr = document.createElement('tr');
+    const th = document.createElement('th');
+    th.textContent = r;
+    tr.appendChild(th);
+    for (let c = 1; c <= 9; c++) {
+      const td = document.createElement('td');
+      td.dataset.r = r; td.dataset.c = c; td.dataset.v = r * c;
+      td.textContent = r * c;
+      if (r === c) td.classList.add('square');
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+
+  /* ── Cross highlight ── */
+  const allTd = () => document.querySelectorAll('#multTable td');
+  let currentSquareMode = false;
+
+  document.getElementById('multTable').addEventListener('mouseover', e => {
+    const td = e.target.closest('td');
+    if (!td) return;
+    const r = +td.dataset.r, c = +td.dataset.c;
+    allTd().forEach(cell => {
+      cell.classList.remove('row-hl','col-hl','cross');
+      if (+cell.dataset.r === r && +cell.dataset.c !== c) cell.classList.add('row-hl');
+      if (+cell.dataset.c === c && +cell.dataset.r !== r) cell.classList.add('col-hl');
+      if (+cell.dataset.r === r && +cell.dataset.c === c) cell.classList.add('cross');
+    });
+    showBubble(td, r, c);
+  });
+
+  document.getElementById('multTable').addEventListener('mouseleave', () => {
+    allTd().forEach(cell => cell.classList.remove('row-hl','col-hl','cross'));
+    hideBubble();
+  });
+
+  /* ── Bubble tooltip ── */
+  const bubble = document.getElementById('bubble');
+  function showBubble(td, r, c) {
+    bubble.textContent = `${r} × ${c} = ${r*c}`;
+    const rect = td.getBoundingClientRect();
+    bubble.style.left = (rect.left + rect.width/2) + 'px';
+    bubble.style.top  = rect.top + 'px';
+    bubble.classList.add('show');
+  }
+  function hideBubble() { bubble.classList.remove('show'); }
+
+  /* ── Particle burst on click ── */
+  document.getElementById('multTable').addEventListener('click', e => {
+    const td = e.target.closest('td');
+    if (!td) return;
+    const rect = td.getBoundingClientRect();
+    const cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
+    const colors = ['#ff6ec7','#ffe44d','#7fff6e','#6ec7ff','#c46eff','#ffb347'];
+    for (let i = 0; i < 18; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const angle = (i / 18) * 360;
+      const dist  = 50 + Math.random() * 50;
+      const rad   = angle * Math.PI / 180;
+      Object.assign(p.style, {
+        left: cx + 'px', top: cy + 'px',
+        background: colors[i % colors.length],
+        '--tx': Math.cos(rad) * dist + 'px',
+        '--ty': Math.sin(rad) * dist + 'px',
+        animationDuration: (0.4 + Math.random() * 0.3) + 's'
+      });
+      document.body.appendChild(p);
+      p.addEventListener('animationend', () => p.remove());
+    }
+  });
+
+  /* ── Mode buttons ── */
+  const modes = {
+    'btn-rainbow': () => applyTheme('rainbow'),
+    'btn-pastel':  () => applyTheme('pastel'),
+    'btn-neon':    () => applyTheme('neon'),
+    'btn-square':  () => toggleSquareMode()
+  };
+
+  document.querySelectorAll('.ctrl-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.id !== 'btn-square') {
+        document.querySelectorAll('.ctrl-btn:not(#btn-square)').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      } else {
+        btn.classList.toggle('active');
+      }
+      modes[btn.id]();
+    });
+  });
+
+  function applyTheme(theme) {
+    const table = document.getElementById('multTable');
+    table.dataset.theme = theme;
+    const rows = tbody.querySelectorAll('tr');
+
+    const palettes = {
+      rainbow: [
+        'rgba(255,110,199,0.18)','rgba(255,160,90,0.18)','rgba(255,228,77,0.18)',
+        'rgba(127,255,110,0.18)','rgba(110,220,255,0.18)','rgba(110,199,255,0.18)',
+        'rgba(110,150,255,0.18)','rgba(196,110,255,0.18)','rgba(255,110,230,0.18)'
+      ],
+      pastel: [
+        'rgba(255,182,193,0.30)','rgba(255,218,185,0.30)','rgba(255,255,180,0.30)',
+        'rgba(186,255,180,0.30)','rgba(180,230,255,0.30)','rgba(173,216,230,0.30)',
+        'rgba(200,190,255,0.30)','rgba(221,160,221,0.30)','rgba(255,180,220,0.30)'
+      ],
+      neon: [
+        'rgba(255,0,128,0.22)','rgba(255,80,0,0.22)','rgba(255,230,0,0.22)',
+        'rgba(0,255,100,0.22)','rgba(0,230,255,0.22)','rgba(0,160,255,0.22)',
+        'rgba(80,0,255,0.22)','rgba(200,0,255,0.22)','rgba(255,0,200,0.22)'
+      ]
+    };
+
+    rows.forEach((row, i) => {
+      row.querySelectorAll('td').forEach(td => {
+        if (!td.classList.contains('square') || !currentSquareMode)
+          td.style.background = palettes[theme][i];
+      });
+    });
+  }
+
+  function toggleSquareMode() {
+    currentSquareMode = !currentSquareMode;
+    document.querySelectorAll('td.square').forEach(td => {
+      if (currentSquareMode) {
+        td.style.background = 'linear-gradient(135deg, rgba(255,220,50,0.65), rgba(255,140,50,0.5))';
+        td.style.fontSize = '1.3rem';
+        td.style.color = '#ffe44d';
+        td.style.boxShadow = '0 0 20px rgba(255,220,50,0.8)';
+        td.textContent = '★' + td.dataset.v;
+      } else {
+        td.style.background = '';
+        td.style.fontSize = '';
+        td.style.color = '#ffe44d';
+        td.style.boxShadow = '';
+        td.textContent = td.dataset.v;
+      }
+    });
+  }
+</script>
+</body>
+</html>

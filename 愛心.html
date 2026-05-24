@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>💖 超可愛愛心 💖</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0a0015;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Segoe UI', sans-serif;
+      overflow: hidden;
+    }
+
+    /* ── Starfield ── */
+    #stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+    .star {
+      position: absolute; border-radius: 50%; background: #fff;
+      animation: twinkle var(--d) ease-in-out infinite alternate;
+    }
+    @keyframes twinkle {
+      from { opacity: 0.1; transform: scale(0.7); }
+      to   { opacity: 1;   transform: scale(1.4); }
+    }
+
+    /* ── Main canvas ── */
+    canvas { position: relative; z-index: 1; }
+
+    /* ── Title ── */
+    .title {
+      position: relative; z-index: 2;
+      margin-top: 28px;
+      font-size: 2rem; font-weight: 900; letter-spacing: 4px;
+      background: linear-gradient(90deg, #ff6ec7, #ffb347, #ff6ec7);
+      background-size: 200%;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      animation: rainbow 3s linear infinite;
+      filter: drop-shadow(0 0 12px rgba(255,110,199,0.8));
+    }
+    @keyframes rainbow { 0%{ background-position:0% } 100%{ background-position:200% } }
+
+    .sub {
+      position: relative; z-index: 2;
+      margin-top: 8px; color: rgba(255,255,255,0.4);
+      font-size: 0.85rem; letter-spacing: 3px;
+    }
+
+    /* ── Floating particles ── */
+    .fp {
+      position: fixed; pointer-events: none; z-index: 0;
+      border-radius: 50%;
+      animation: floatUp var(--dur) ease-in infinite;
+      opacity: 0;
+    }
+    @keyframes floatUp {
+      0%   { transform: translateY(0) scale(1); opacity: 0.7; }
+      100% { transform: translateY(-100vh) scale(0.3); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="stars"></div>
+<canvas id="c" width="520" height="480"></canvas>
+<div class="title">💖 LOVE 💖</div>
+<div class="sub">CLICK · HOVER · ENJOY</div>
+
+<script>
+/* ── Stars ── */
+const starsEl = document.getElementById('stars');
+for (let i = 0; i < 150; i++) {
+  const s = document.createElement('div');
+  s.className = 'star';
+  const sz = Math.random() * 2.5 + 0.5;
+  Object.assign(s.style, {
+    width: sz+'px', height: sz+'px',
+    left: Math.random()*100+'%', top: Math.random()*100+'%',
+    '--d': (Math.random()*3+1)+'s',
+    animationDelay: Math.random()*4+'s'
+  });
+  starsEl.appendChild(s);
+}
+
+/* ── Floating hearts bg ── */
+function spawnFP() {
+  const fp = document.createElement('div');
+  fp.className = 'fp';
+  const sz = Math.random()*10+6;
+  const colors = ['#ff6ec7','#ffb347','#c46eff','#ff4d6d','#ff85c2'];
+  Object.assign(fp.style, {
+    width: sz+'px', height: sz+'px',
+    left: Math.random()*100+'vw',
+    bottom: '0',
+    background: colors[Math.floor(Math.random()*colors.length)],
+    '--dur': (Math.random()*5+4)+'s',
+    animationDelay: Math.random()*2+'s'
+  });
+  document.body.appendChild(fp);
+  fp.addEventListener('animationend', () => fp.remove());
+}
+setInterval(spawnFP, 300);
+
+/* ── Canvas heart ── */
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+const cx = W/2, cy = H/2 - 10;
+
+// Heart parametric: x = 16sin³t, y = -(13cos-5cos2t-2cos3t-cos4t)
+function heartPoint(t, scale=1) {
+  const x = 16 * Math.pow(Math.sin(t), 3);
+  const y = -(13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t));
+  return [cx + x*scale, cy + y*scale];
+}
+
+/* --- Particles that live on the heart outline --- */
+const PARTICLE_COUNT = 220;
+const particles = [];
+for (let i = 0; i < PARTICLE_COUNT; i++) {
+  const t = (i / PARTICLE_COUNT) * Math.PI * 2;
+  const scale = 13 + Math.random() * 2;
+  const [bx, by] = heartPoint(t, scale);
+  particles.push({
+    t, scale,
+    x: bx, y: by,
+    bx, by,                          // base position
+    vx: 0, vy: 0,
+    size: Math.random() * 3 + 1.5,
+    hue: Math.random() * 60 + 330,   // pinks & reds
+    life: Math.random(),
+    speed: Math.random() * 0.005 + 0.003,
+    glow: Math.random() * 8 + 4
+  });
+}
+
+/* --- Inner fill particles --- */
+const INNER_COUNT = 600;
+const innerPts = [];
+for (let i = 0; i < INNER_COUNT; i++) {
+  // Rejection sampling inside heart
+  let x, y, inside = false;
+  while (!inside) {
+    x = (Math.random() - 0.5) * 320 + cx;
+    y = (Math.random() - 0.5) * 300 + cy;
+    const nx = (x - cx) / 13;
+    const ny = (y - cy) / 13;
+    // inside heart: (x²+y²-1)³ - x²y³ ≤ 0
+    const v = Math.pow(nx*nx + ny*ny - 1, 3) - nx*nx * Math.pow(ny, 3);
+    inside = v <= 0.08;
+  }
+  innerPts.push({
+    x, y,
+    ox: x, oy: y,
+    size: Math.random() * 2.2 + 0.6,
+    hue: Math.random() * 50 + 330,
+    alpha: Math.random() * 0.6 + 0.2,
+    twinkleSpeed: Math.random() * 0.03 + 0.01,
+    phase: Math.random() * Math.PI * 2
+  });
+}
+
+/* --- Mouse interaction --- */
+let mouse = { x: cx, y: cy, down: false };
+canvas.addEventListener('mousemove', e => {
+  const r = canvas.getBoundingClientRect();
+  mouse.x = e.clientX - r.left;
+  mouse.y = e.clientY - r.top;
+});
+canvas.addEventListener('mousedown', () => { mouse.down = true; });
+canvas.addEventListener('mouseup',   () => { mouse.down = false; });
+
+/* --- Click burst --- */
+let bursts = [];
+canvas.addEventListener('click', e => {
+  const r = canvas.getBoundingClientRect();
+  const bx = e.clientX - r.left, by = e.clientY - r.top;
+  for (let i = 0; i < 30; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = Math.random() * 5 + 2;
+    bursts.push({
+      x: bx, y: by,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      size: Math.random() * 4 + 2,
+      hue: Math.random() * 60 + 320,
+      life: 1
+    });
+  }
+});
+
+/* ── Gradient helpers ── */
+function heartGradient(pulse) {
+  const g = ctx.createRadialGradient(cx, cy-20, 10, cx, cy, 160 + pulse*10);
+  g.addColorStop(0,   `hsla(350, 100%, 80%, 0.95)`);
+  g.addColorStop(0.4, `hsla(340, 100%, 60%, 0.9)`);
+  g.addColorStop(0.75,`hsla(320, 100%, 45%, 0.85)`);
+  g.addColorStop(1,   `hsla(300, 100%, 30%, 0.7)`);
+  return g;
+}
+
+function drawHeartPath(scale) {
+  ctx.beginPath();
+  for (let i = 0; i <= 300; i++) {
+    const t = (i / 300) * Math.PI * 2;
+    const [x, y] = heartPoint(t, scale);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+}
+
+/* ── Animation loop ── */
+let frame = 0;
+function animate() {
+  requestAnimationFrame(animate);
+  frame++;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const pulse = Math.sin(frame * 0.04) * 0.8;   // heartbeat scale offset
+  const baseScale = 13.5 + pulse;
+
+  /* -- Glow layers -- */
+  for (let layer = 4; layer >= 1; layer--) {
+    const s = baseScale + layer * 2.5;
+    drawHeartPath(s);
+    ctx.fillStyle = `rgba(255, 50, 120, ${0.04 / layer})`;
+    ctx.fill();
+  }
+
+  /* -- Main heart fill -- */
+  drawHeartPath(baseScale);
+  ctx.fillStyle = heartGradient(pulse);
+  ctx.fill();
+
+  /* -- Shimmer overlay -- */
+  drawHeartPath(baseScale);
+  const shimmer = ctx.createLinearGradient(cx-100, cy-130, cx+80, cy+80);
+  shimmer.addColorStop(0,   `rgba(255,255,255,${0.18 + Math.sin(frame*0.05)*0.06})`);
+  shimmer.addColorStop(0.5, 'rgba(255,255,255,0)');
+  shimmer.addColorStop(1,   'rgba(255,100,180,0.05)');
+  ctx.fillStyle = shimmer;
+  ctx.fill();
+
+  /* -- Border glow -- */
+  drawHeartPath(baseScale);
+  ctx.strokeStyle = `hsla(${330 + Math.sin(frame*0.02)*30}, 100%, 85%, 0.9)`;
+  ctx.lineWidth = 2.5;
+  ctx.shadowColor = '#ff6ec7';
+  ctx.shadowBlur = 24 + pulse * 8;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  /* -- Inner sparkle particles -- */
+  innerPts.forEach(p => {
+    p.phase += p.twinkleSpeed;
+    const alpha = p.alpha * (0.5 + 0.5 * Math.sin(p.phase));
+
+    // Mouse repulsion
+    const dx = p.ox - mouse.x, dy = p.oy - mouse.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    const repelR = mouse.down ? 80 : 50;
+    if (dist < repelR) {
+      const force = (repelR - dist) / repelR;
+      p.x = p.ox + dx/dist * force * (mouse.down ? 40 : 20);
+      p.y = p.oy + dy/dist * force * (mouse.down ? 40 : 20);
+    } else {
+      p.x += (p.ox - p.x) * 0.08;
+      p.y += (p.oy - p.y) * 0.08;
+    }
+
+    ctx.beginPath();
+    ctx.arc(p.x + Math.sin(p.phase)*1.5, p.y + Math.cos(p.phase)*1.5, p.size, 0, Math.PI*2);
+    ctx.fillStyle = `hsla(${p.hue}, 100%, 85%, ${alpha})`;
+    ctx.shadowColor = `hsla(${p.hue}, 100%, 70%, 0.8)`;
+    ctx.shadowBlur = p.size * 3;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  });
+
+  /* -- Outline orbit particles -- */
+  particles.forEach((p, idx) => {
+    p.t += p.speed;
+    const [bx, by] = heartPoint(p.t, p.scale + Math.sin(frame*0.05 + idx)*0.5);
+    p.bx = bx; p.by = by;
+
+    // Mouse repulsion
+    const dx = p.bx - mouse.x, dy = p.by - mouse.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist < 60) {
+      const f = (60 - dist) / 60 * 15;
+      p.x += (p.bx + dx/dist*f - p.x) * 0.15;
+      p.y += (p.by + dy/dist*f - p.y) * 0.15;
+    } else {
+      p.x += (p.bx - p.x) * 0.1;
+      p.y += (p.by - p.y) * 0.1;
+    }
+
+    p.life += 0.02;
+    const alpha = 0.6 + 0.4 * Math.sin(p.life * Math.PI);
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+    ctx.fillStyle = `hsla(${p.hue + Math.sin(frame*0.03)*20}, 100%, 75%, ${alpha})`;
+    ctx.shadowColor = `hsla(${p.hue}, 100%, 70%, 0.9)`;
+    ctx.shadowBlur = p.glow;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  });
+
+  /* -- Click bursts -- */
+  bursts = bursts.filter(b => b.life > 0);
+  bursts.forEach(b => {
+    b.x += b.vx; b.y += b.vy;
+    b.vy += 0.15;
+    b.life -= 0.025;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.size * b.life, 0, Math.PI*2);
+    ctx.fillStyle = `hsla(${b.hue}, 100%, 70%, ${b.life})`;
+    ctx.shadowColor = `hsla(${b.hue}, 100%, 60%, 0.9)`;
+    ctx.shadowBlur = 10;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  });
+
+  /* -- Heartbeat ring pulse -- */
+  const ring = (Math.sin(frame * 0.04) + 1) / 2;
+  if (ring > 0.95) {
+    const ringScale = baseScale + (1 - ring) * 60;
+    drawHeartPath(ringScale);
+    ctx.strokeStyle = `rgba(255,110,199, ${(ring - 0.95) * 20})`;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+}
+
+animate();
+</script>
+</body>
+</html>
