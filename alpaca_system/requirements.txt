@@ -1,0 +1,11 @@
+alpaca-py>=0.30.0
+yfinance>=0.2.40
+pandas>=2.0.0
+numpy>=1.26.0
+PyYAML>=6.0
+pydantic>=2.6.0
+jsonschema>=4.21.0
+streamlit>=1.33.0
+matplotlib>=3.8.0
+plotly>=5.20.0
+pytest>=8.0.0

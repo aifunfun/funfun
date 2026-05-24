@@ -1,0 +1,10 @@
+{
+  "name": "nasdaq_momentum_top10",
+  "description": "NASDAQ 市值前 100 中，取近 20 日動能最強的前 10 檔，等權各 10%；月初與新資金進場時再平衡。僅供研究參考，不構成投資建議。",
+  "universe":    { "source": "nasdaq", "rank_by": "market_cap", "top_n": 100 },
+  "signals":     [ { "type": "momentum", "lookback_days": 20 } ],
+  "selection":   { "rank_by": "momentum", "order": "desc", "top_n": 10 },
+  "sizing":      { "method": "equal_weight", "weight_per_position": 0.10, "shares": "integer" },
+  "rebalance":   { "schedule": "monthly_first_trading_day", "on_new_cash": true },
+  "constraints": { "long_only": true, "max_positions": 10 }
+}

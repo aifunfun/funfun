@@ -1,0 +1,52 @@
+name: 每日報告 + Email（台灣 6:00）
+
+# 台灣時間 06:00 = UTC 22:00（前一日）。內容為前一個美股交易日的結果。
+# 週一至週五(UTC)觸發 -> 台灣週二至週六早上收到，涵蓋美股週一至週五盤後。
+on:
+  schedule:
+    - cron: "0 22 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      no_email:
+        description: "只產報告不寄信"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write   # 把歷史報告 JSON 寫回 repo，供回查與儀表板
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: alpaca_system
+    env:
+      ALPACA_MAIN_KEY: ${{ secrets.ALPACA_MAIN_KEY }}
+      ALPACA_MAIN_SECRET: ${{ secrets.ALPACA_MAIN_SECRET }}
+      GMAIL_USER: ${{ secrets.GMAIL_USER }}
+      GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+      REPORT_EMAIL_TO: ${{ secrets.REPORT_EMAIL_TO }}
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 安裝套件
+        run: pip install -r requirements.txt
+      - name: 產生報告並寄信
+        run: |
+          if [ "${{ github.event.inputs.no_email }}" = "true" ]; then
+            python scripts/run_report.py --no-email
+          else
+            python scripts/run_report.py
+          fi
+      - name: 提交歷史報告
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add reports/
+          git commit -m "report: 每日報告 $(date -u +%F)" || echo "無變更"
+          git push || echo "推送略過"

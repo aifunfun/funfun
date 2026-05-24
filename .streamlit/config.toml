@@ -1,0 +1,9 @@
+# Streamlit Community Cloud / 本機共用設定
+[server]
+headless = true
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+base = "light"

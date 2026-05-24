@@ -1,0 +1,6 @@
+# Streamlit Community Cloud 部署用：只裝「儀表板」需要的套件。
+# 儀表板只讀報告 JSON，不連 Alpaca、不需要 alpaca-py / yfinance / matplotlib。
+streamlit>=1.33.0
+pandas>=2.0.0
+PyYAML>=6.0
+pydantic>=2.6.0

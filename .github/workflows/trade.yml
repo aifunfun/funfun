@@ -1,0 +1,51 @@
+name: 每日交易（走過所有帳戶）
+
+# 美股開盤後執行買賣。GitHub cron 用 UTC，且不處理美國日光節約時間：
+#   14:30 UTC = 美東 09:30(EST) / 10:30(EDT)。觸發時刻會隨 DST ±1 小時，屬正常。
+on:
+  schedule:
+    - cron: "30 14 * * 1-5"   # 週一至週五，美股開盤後
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "只規劃不真的送單"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write   # 為了把再平衡狀態(_state.json)寫回 repo
+
+jobs:
+  trade:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: alpaca_system
+    env:
+      # 帳戶金鑰（對應 accounts.yaml 的 key_env / secret_env）
+      ALPACA_MAIN_KEY: ${{ secrets.ALPACA_MAIN_KEY }}
+      ALPACA_MAIN_SECRET: ${{ secrets.ALPACA_MAIN_SECRET }}
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 安裝套件
+        run: pip install -r requirements.txt
+      - name: 執行交易
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            python scripts/run_trading.py --dry-run
+          else
+            python scripts/run_trading.py
+          fi
+      - name: 提交再平衡狀態
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add reports/ || true
+          git commit -m "chore: 更新再平衡狀態 $(date -u +%F)" || echo "無變更"
+          git push || echo "推送略過"

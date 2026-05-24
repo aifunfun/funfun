@@ -1,0 +1,10 @@
+# 多帳戶設定。
+# 每個帳戶同一時間只綁定「一個」策略；要換策略改 strategy 欄位即可。
+# API 金鑰「不」寫在這裡，而是放在環境變數 / GitHub Secrets，
+# 這裡只記錄「環境變數的名稱」(key_env / secret_env)。
+accounts:
+  - id: main
+    env: paper                      # paper = 模擬盤；live = 真實盤
+    strategy: nasdaq_momentum_top10 # 對應 strategies/<name>.json
+    key_env: ALPACA_MAIN_KEY        # 從這個環境變數讀 API Key
+    secret_env: ALPACA_MAIN_SECRET  # 從這個環境變數讀 API Secret

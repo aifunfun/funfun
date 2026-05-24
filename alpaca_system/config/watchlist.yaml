@@ -1,0 +1,9 @@
+# 你關注的三大類別股票，會顯示在日報下方與儀表板。
+# 可自由增減類別與股票（僅供研究參考，非投資建議）。
+categories:
+  - name: 半導體
+    symbols: [NVDA, AVGO, AMD, QCOM, MU]
+  - name: 雲端軟體
+    symbols: [MSFT, CRM, ADBE, NOW, PANW]
+  - name: 電動車與能源
+    symbols: [TSLA, ENPH, FSLR]
